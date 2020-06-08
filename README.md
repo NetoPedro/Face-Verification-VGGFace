@@ -6,6 +6,8 @@ Since the focus was in the identification of a person by their face, the compone
 
 ## Demo 
 
+## Instructions to use
+
 ## Dataset 
 
 ## Training 
@@ -15,5 +17,4 @@ Since the focus was in the identification of a person by their face, the compone
 ### Phase 2 - Triplet training 
 
 
-## Instructions to use
 
