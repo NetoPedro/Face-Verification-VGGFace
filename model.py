@@ -61,7 +61,7 @@ class VGGFace_Extractor(nn.Module):
         out = out.reshape(out.shape[0], -1)
         x = out / torch.norm(out, 2,dim=1).reshape(out.shape[0],1)
         embedding = self.embed_layer(x)
-        return out,embedding
+        return embedding
 
 
     def triplet_mode(self):
