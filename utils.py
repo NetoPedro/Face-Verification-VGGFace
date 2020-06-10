@@ -22,10 +22,10 @@ def load_image(image):
                 Returns:
                     image_blob: The image loaded as an Numpy matrix.
                 '''
-
-   
     img = plt.imread(image)
     return img
+
+#def extract_individuals_features():
 
 
 
@@ -43,7 +43,7 @@ class SubtractMean(object):
                 return img
 
 def preprocess(image,device):
-    transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize(256),transforms.CenterCrop(224),SubtractMean()])
+    transform = transforms.Compose([transforms.Resize(256),transforms.CenterCrop(224),SubtractMean()])
     image = transform(image)
    
     return image.to(device)
@@ -51,3 +51,14 @@ def preprocess(image,device):
 
 #create_test_cases("/l/Dataset/test/", "/l/Dataset/test_cases.csv", 10, 4000)
 #load_test_cases( "../Dataset/test_cases.csv")
+
+def euclidean_distance(feature1, feature2):
+        """
+            Args:
+                original_embedding (tensor): Tensor containing the embedding space of the original image. Arbitrary size.
+                outputs (tensor): Tensor that contais the embeddings of all other images.
+                images_count (int): Number of different images on outputs
+            Returns:
+                distance (tensor): Tensor of size "images_count" with euclidean distance for each image between the original
+        """
+        return torch.cdist(feature1.view(1, -1), feature2.view(1, -1))
