@@ -49,6 +49,32 @@ class VGGFace_training(nn.Module):
 
 
 
+class VGGFace_Extractor(nn.Module):
+    def __init__(self):
+        super(VGGFace_Extractor,self).__init__()
+        self.model = models.resnet50(True)
+        self.model.fc = Identity()
+        self.model.avgpool = Identity()
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.embed_layer = nn.Linear(2048,1024)
+
+    def forward(self, x):
+        x = self.model(x).reshape(x.shape[0],-1,7,7)
+        out = self.avgpool(x)
+
+        out = out.reshape(out.shape[0], -1)
+        x = out / torch.norm(out, 2,dim=1).reshape(out.shape[0],1)
+        embedding = self.embed_layer(x)
+        return out,embedding
+
+
+    def triplet_mode(self):
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.embed_layer.requires_grad = True
+
+    def save_weights(self,path):
+        torch.save(self.state_dict(), path)
 
 
 class DetectionModel(nn.Module):
