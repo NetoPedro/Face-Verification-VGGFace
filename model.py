@@ -5,10 +5,6 @@ from torchvision.models import resnet50
 import  numpy as np
 
 
-class FaceFeatureExtractor(nn.Module):
-    pass
-
-
 class Identity(nn.Module):
     def __init__(self):
         super(Identity, self).__init__()
