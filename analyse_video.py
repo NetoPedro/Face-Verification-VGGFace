@@ -18,31 +18,21 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 
-def process_video(video_path):
+def process_video(video_path,output_path,margins=40):
     with torch.no_grad():
         mtcnn = MTCNN(image_size= 256, margin = 0)
         model = Model.VGGFace_Extractor().to(device)
         model.load_state_dict(torch.load("models/face_extractor_model.mdl"))
         model.eval()
-        threshold = 115.0
-        #with open('threshold.txt') as f:
-        #    threshold = float(f.readline())
-        #pretrained_dict = torch.load("models/face_extractor_model.mdl", map_location=lambda storage, loc: storage)
-        #model.load_state_dict(pretrained_dict)
+        threshold = 120.0
 
         cap = cv2.VideoCapture(video_path)
 
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
-        #out = cv2.VideoWriter('output_videos/output2.avi', fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
+        out = cv2.VideoWriter(output_path, fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
 
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        bottomLeftCornerOfText = (10, 400)
-        fontScale = 1
-        fontColor = (255, 255, 255)
-        lineType = 5
 
         ret, frame1 = cap.read()
-        prvs = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         hsv = np.zeros_like(frame1)
         hsv[..., 1] = 255
         i = 0
@@ -58,15 +48,15 @@ def process_video(video_path):
             img_draw = frame2.copy()
             img_draw = Image.fromarray(img_draw)
             draw = ImageDraw.Draw(img_draw)
-            face = None
 
             if boxes is not None:
                 names = []
                 distances_difference = []
                 for (box, point) in zip(boxes, probs):
                     """ Loop inspired by the extract face method from facenet_pytorch"""
-                    if point < .60: continue
-                    margin = 40
+                    if point < .985: continue
+                    #print(point)
+                    margin = margins
                     image_size = 256
                     margin = [
                         margin * (box[2] - box[0]) / (image_size - margin),
@@ -95,6 +85,7 @@ def process_video(video_path):
                         if distance < threshold and distance < best_distance:
                             best_distance = distance
                             name = re.sub('_[1-9]*[.]*[a-zA-Z]*', '', f1.replace(images_path,""))
+                            #name = re.sub('[.][a-zA-Z]*', '', f1.replace(images_path, ""))
 
 
 
@@ -103,22 +94,21 @@ def process_video(video_path):
                     distances_difference.append(best_distance)
 
                 for (box, point,name,distances) in zip(boxes, probs,names,distances_difference):
-                    if point < .60: continue
+                    if point < .98 or name == "Unknown": continue
                     draw.rectangle(box.tolist(), width=4)
-                    print(name + "  " + str(distances))
+                    #print(name + "  " + str(distances))
                     draw.text(box.tolist(), name, font=ImageFont.truetype("Keyboard.ttf",40))
 
-                #plt.imshow(img_draw)
-                #plt.show()
-            cv2.imshow("",np.asarray(img_draw))
 
-            k = cv2.waitKey(30) & 0xff
+            #cv2.imshow("",np.asarray(img_draw))
+
+            k = cv2.waitKey(3) & 0xff
             if k == 27:
                 break
-         #   out.write(np.asarray(img_draw))
+            out.write(np.asarray(img_draw))
 
         print("Video Generated")
-        #out.release()
+        out.release()
         cap.release()
         cv2.destroyAllWindows()
 
@@ -136,5 +126,20 @@ def extract_features_individuals():
             #features = features.numpy()
             torch.save(features,"individuals_extracted/"+re.sub('[.][a-zA-Z]*', '.pt',f1.split("/")[1]))
 
-#extract_features_individuals()
-process_video("input_videos/video2.mp4")
+
+from datetime import datetime
+
+now = datetime.now()
+
+
+
+
+print("Extracting Features")
+print(now.strftime("%H:%M:%S"))
+extract_features_individuals()
+
+
+now = datetime.now()
+print("Reading video 3_3")
+print(now.strftime("%H:%M:%S"))
+process_video("input_videos/video3.mp4",'output_videos/output3_5.avi',120)
