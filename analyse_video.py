@@ -13,6 +13,7 @@ import glob
 import re
 import math
 import ffmpeg
+import ffprobe
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -66,7 +67,7 @@ def process_video(video_path,output_path,margins=40):
             if not (ret): break
 
             if rotateCode is not None:
-                frame = correct_rotation(frame2, rotateCode)
+                frame2  = correct_rotation(frame2, rotateCode)
 
             boxes, probs = mtcnn.detect(frame2)
 
@@ -161,7 +162,7 @@ now = datetime.now()
 
 print("Extracting Features")
 print(now.strftime("%H:%M:%S"))
-extract_features_individuals()
+#extract_features_individuals()
 
 
 now = datetime.now()
