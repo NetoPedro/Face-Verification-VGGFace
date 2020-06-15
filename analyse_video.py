@@ -11,11 +11,32 @@ from torchvision import transforms
 import os
 import glob
 import re
-
+import math
+import ffmpeg
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
+def check_rotation(path_video_file):
+    """Source: https://stackoverflow.com/questions/53097092/frame-from-video-is-upside-down-after-extracting?fbclid=IwAR3OcgKRaJoPi9ljJ6UAlnaGKqbnzk6H5uaAMDmD8_ZHE86xa-7gbVlPGD0"""
+    # this returns meta-data of the video file in form of a dictionary
+    meta_dict = ffmpeg.probe(path_video_file)
+
+    # from the dictionary, meta_dict['streams'][0]['tags']['rotate'] is the key
+    # we are looking for
+    rotateCode = None
+    if int(meta_dict['streams'][0]['tags']['rotate']) == 90:
+        rotateCode = cv2.ROTATE_90_CLOCKWISE
+    elif int(meta_dict['streams'][0]['tags']['rotate']) == 180:
+        rotateCode = cv2.ROTATE_180
+    elif int(meta_dict['streams'][0]['tags']['rotate']) == 270:
+        rotateCode = cv2.ROTATE_90_COUNTERCLOCKWISE
+
+    return rotateCode
+
+def correct_rotation(frame, rotateCode):
+    "Source: https://stackoverflow.com/questions/53097092/frame-from-video-is-upside-down-after-extracting?fbclid=IwAR3OcgKRaJoPi9ljJ6UAlnaGKqbnzk6H5uaAMDmD8_ZHE86xa-7gbVlPGD0"
+    return cv2.rotate(frame, rotateCode)
 
 
 def process_video(video_path,output_path,margins=40):
@@ -27,6 +48,7 @@ def process_video(video_path,output_path,margins=40):
         threshold = 120.0
 
         cap = cv2.VideoCapture(video_path)
+        rotateCode = check_rotation(video_path)
 
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
         out = cv2.VideoWriter(output_path, fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
@@ -42,6 +64,9 @@ def process_video(video_path,output_path,margins=40):
 
             ret, frame2 = cap.read()
             if not (ret): break
+
+            if rotateCode is not None:
+                frame = correct_rotation(frame2, rotateCode)
 
             boxes, probs = mtcnn.detect(frame2)
 
@@ -142,4 +167,4 @@ extract_features_individuals()
 now = datetime.now()
 print("Reading video 3_3")
 print(now.strftime("%H:%M:%S"))
-process_video("input_videos/video3.mp4",'output_videos/output3_5.avi',120)
+process_video("input_videos/video5.mov",'output_videos/output5_1.avi',120)
