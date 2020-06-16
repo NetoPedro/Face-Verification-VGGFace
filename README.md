@@ -9,14 +9,8 @@ One of the important elements of the proposed solution is that the algorithm doe
 ## Demo 
 
 ## Instructions to use
+ 
 
-## Dataset 
-
-## Training 
-
-### Phase 1 - Classification training 
-
-### Phase 2 - Triplet training 
 
 
 
