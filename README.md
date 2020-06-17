@@ -1,4 +1,4 @@
-# Face Verification
+# Face Recognition
 
 This project aims to identify people in videos with deep learning methods. 
 The initial idea was to replicate the [VGG2 Dataset paper](https://arxiv.org/abs/1710.08092), therefore I have trained a ResNet-50 model for that purpose on a subset of that dataset. 
@@ -9,14 +9,8 @@ One of the important elements of the proposed solution is that the algorithm doe
 ## Demo 
 
 ## Instructions to use
+ 
 
-## Dataset 
-
-## Training 
-
-### Phase 1 - Classification training 
-
-### Phase 2 - Triplet training 
 
 
 
