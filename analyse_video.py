@@ -37,13 +37,12 @@ def correct_rotation(frame, rotateCode):
     return cv2.rotate(frame, rotateCode)
 
 
-def process_video(video_path,output_path,margins=40):
+def process_video(video_path,output_path,margins=40,facenet_threshold=.985,euclidean_distance_threshold = 120.0):
     with torch.no_grad():
         mtcnn = MTCNN(image_size= 256, margin = 0)
         model = Model.VGGFace_Extractor().to(device)
         model.load_state_dict(torch.load("models/face_extractor_model.mdl"))
         model.eval()
-        threshold = 120.0
         cap = cv2.VideoCapture(video_path)
         rotateCode = check_rotation(video_path)
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
@@ -69,7 +68,7 @@ def process_video(video_path,output_path,margins=40):
                 for (box, point) in zip(boxes, probs):
                     """ Loop from the extract_face method from facenet_pytorch"""
 
-                    if point < .985: continue
+                    if point < facenet_threshold: continue
                     margin = margins
                     image_size = 256
                     margin = [
@@ -90,11 +89,11 @@ def process_video(video_path,output_path,margins=40):
                     data_path = os.path.join(images_path, '*pt')
                     files = glob.glob(data_path)
                     name = "Unknown"
-                    best_distance = threshold + 5
+                    best_distance = euclidean_distance_threshold + 5
                     for k,f1 in enumerate(files):
                         features = torch.load(f1)
                         distance = utils.euclidean_distance(features,features_1)
-                        if distance < threshold and distance < best_distance:
+                        if distance < euclidean_distance_threshold and distance < best_distance:
                             best_distance = distance
                             name = re.sub('_[1-9]*[.]*[a-zA-Z]*', '', f1.replace(images_path,""))
 
@@ -102,7 +101,7 @@ def process_video(video_path,output_path,margins=40):
                     distances_difference.append(best_distance)
 
                 for (box, point,name,distances) in zip(boxes, probs,names,distances_difference):
-                    if point < .98 or name == "Unknown": continue
+                    if point < facenet_threshold or name == "Unknown": continue
                     draw.rectangle(box.tolist(), width=4)
                     draw.text(box.tolist(), name, font=ImageFont.truetype("Keyboard.ttf",40))
 
@@ -137,16 +136,22 @@ def main():
     argparse.add_argument('--output_video_path', type=str, help='Path with the location to store the output video',
                           default="./output_videos/")
     argparse.add_argument('--margin', type=int, help='Margin to add to the size of the bounding box', default=120)
+    argparse.add_argument('--extract_features', type=bool, help='Extract features from individuals dir', default=False)
+    argparse.add_argument('--facenet_threshold', type=float, help='Threshold of confidence while detecting faces', default=.985)
+    argparse.add_argument('--euclidean_distance_threshold', type=float, help='Threshold of the euclidean distance to identify the face', default=120.0)
 
     args = argparse.parse_args()
+
 
     # check arguments
     assert os.path.exists(args.input_video_path), "video path: : " + args.data_dir + " not found."
     assert os.path.exists(args.output_video_path), "output directory: " + args.output_dir + " not found."
     assert args.margin >= 0, "line_width should be >= 0."
 
-
-    extract_features = True
-    if extract_features:
+    if args.extract_features:
         extract_features_individuals()
-    process_video(args.input_video_path, args.output_video_path + "output_video.avi",args.margin)
+    process_video(args.input_video_path,
+                  args.output_video_path + "output_video.avi",
+                  args.margin,
+                  args.facenet_threshold,
+                  args.euclidean_distance_threshold)
