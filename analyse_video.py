@@ -153,19 +153,12 @@ def extract_features_individuals():
             torch.save(features,"individuals_extracted/"+re.sub('[.][a-zA-Z]*', '.pt',f1.split("/")[1]))
 
 
-from datetime import datetime
-
-now = datetime.now()
-
-
-
-
-print("Extracting Features")
-print(now.strftime("%H:%M:%S"))
-#extract_features_individuals()
-
-
-now = datetime.now()
-print("Reading video 3_3")
-print(now.strftime("%H:%M:%S"))
-process_video("input_videos/video5.mov",'output_videos/output5_1.avi',120)
+def main():
+    input_video_path = ""
+    output_video_path = ""
+    margin = 10
+    extract_features = True
+    if extract_features:
+        print("Extracting Features")
+        extract_features_individuals()
+    process_video(input_video_path, output_video_path,margin)
