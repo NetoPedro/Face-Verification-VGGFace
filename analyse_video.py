@@ -131,10 +131,22 @@ def extract_features_individuals():
 
 def main():
     argparse = ArgumentParser()
-    input_video_path = ""
-    output_video_path = ""
-    margin = 10
+
+    argparse.add_argument('--input_video_path', type=str, help='Input video path.',
+                          default="./input_videos/video1.mp4")
+    argparse.add_argument('--output_video_path', type=str, help='Path with the location to store the output video',
+                          default="./output_videos/")
+    argparse.add_argument('--margin', type=int, help='Margin to add to the size of the bounding box', default=120)
+
+    args = argparse.parse_args()
+
+    # check arguments
+    assert os.path.exists(args.input_video_path), "video path: : " + args.data_dir + " not found."
+    assert os.path.exists(args.output_video_path), "output directory: " + args.output_dir + " not found."
+    assert args.margin >= 0, "line_width should be >= 0."
+
+
     extract_features = True
     if extract_features:
         extract_features_individuals()
-    process_video(input_video_path, output_video_path,margin)
+    process_video(args.input_video_path, args.output_video_path + "output_video.avi",args.margin)
