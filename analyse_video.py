@@ -37,11 +37,20 @@ def correct_rotation(frame, rotateCode):
     return cv2.rotate(frame, rotateCode)
 
 
-def process_video(video_path,output_path,margins=40,facenet_threshold=.985,euclidean_distance_threshold = 120.0):
+def process_video(weights_path,video_path,output_path,margins=40,facenet_threshold=.985,euclidean_distance_threshold = 120.0):
+    """
+    Reads an input video, and outputs another similar video with the faces identified. Ignores Unknowns.
+    :param weights_path: The path to the weights of the model
+    :param video_path: The path to the video to be processed
+    :param output_path: The path to output the video to be stored
+    :param margins: Margin to add to the size of the bounding box
+    :param facenet_threshold: Threshold of confidence while detecting faces
+    :param euclidean_distance_threshold: Threshold of the euclidean distance to identify the face
+    """
     with torch.no_grad():
         mtcnn = MTCNN(image_size= 256, margin = 0)
         model = Model.VGGFace_Extractor().to(device)
-        model.load_state_dict(torch.load("models/face_extractor_model.mdl"))
+        model.load_state_dict(torch.load(weights_path))
         model.eval()
         cap = cv2.VideoCapture(video_path)
         rotateCode = check_rotation(video_path)
@@ -114,10 +123,14 @@ def process_video(video_path,output_path,margins=40,facenet_threshold=.985,eucli
         cap.release()
         cv2.destroyAllWindows()
 
-def extract_features_individuals():
+def extract_features_individuals(weights_path):
+    """
+    Extracts the features from a group of faces
+    :param weights_path: The path to the weights of the model
+    """
     with torch.no_grad():
         model = Model.VGGFace_Extractor().to(device)
-        model.load_state_dict(torch.load("models/face_extractor_model.mdl"))
+        model.load_state_dict(torch.load(weights_path))
         model.eval()
         images_path = "individuals/"
         data_path = os.path.join(images_path, '*g')
@@ -131,6 +144,7 @@ def extract_features_individuals():
 def main():
     argparse = ArgumentParser()
 
+    argparse.add_argument('--weight_file_path', type=str, help='Pretrained weight file.', default="models/face_extractor_model.mdl")
     argparse.add_argument('--input_video_path', type=str, help='Input video path.',
                           default="./input_videos/video1.mp4")
     argparse.add_argument('--output_video_path', type=str, help='Path with the location to store the output video',
@@ -144,14 +158,19 @@ def main():
 
 
     # check arguments
-    assert os.path.exists(args.input_video_path), "video path: : " + args.data_dir + " not found."
-    assert os.path.exists(args.output_video_path), "output directory: " + args.output_dir + " not found."
+    assert os.path.exists(args.weight_file_path), "Weights path : " + args.weight_file_path + " not found."
+    assert os.path.exists(args.input_video_path), "video path: " + args.input_video_path + " not found."
+    assert os.path.exists(args.output_video_path), "output directory: " + args.output_video_path + " not found."
     assert args.margin >= 0, "line_width should be >= 0."
 
     if args.extract_features:
-        extract_features_individuals()
-    process_video(args.input_video_path,
+        extract_features_individuals(args.weight_file_path)
+    process_video(args.weight_file_path,
+                  args.input_video_path,
                   args.output_video_path + "output_video.avi",
                   args.margin,
                   args.facenet_threshold,
                   args.euclidean_distance_threshold)
+
+if __name__ == '__main__':
+  main()
