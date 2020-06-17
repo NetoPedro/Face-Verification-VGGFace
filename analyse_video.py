@@ -5,15 +5,12 @@ import utils
 from facenet_pytorch import MTCNN
 from facenet_pytorch.models.utils.detect_face import crop_resize,get_size
 from PIL import Image, ImageDraw, ImageFont
-import matplotlib.pyplot as plt
 import cv2
-from torchvision import transforms
 import os
 import glob
 import re
-import math
 import ffmpeg
-import ffprobe
+from argparse import ArgumentParser
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -47,41 +44,32 @@ def process_video(video_path,output_path,margins=40):
         model.load_state_dict(torch.load("models/face_extractor_model.mdl"))
         model.eval()
         threshold = 120.0
-
         cap = cv2.VideoCapture(video_path)
         rotateCode = check_rotation(video_path)
-
         fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
         out = cv2.VideoWriter(output_path, fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
-
-
         ret, frame1 = cap.read()
         hsv = np.zeros_like(frame1)
         hsv[..., 1] = 255
         i = 0
-
         while (cap.isOpened()):
             i += 1
-
             ret, frame2 = cap.read()
             if not (ret): break
-
             if rotateCode is not None:
                 frame2  = correct_rotation(frame2, rotateCode)
 
             boxes, probs = mtcnn.detect(frame2)
-
             img_draw = frame2.copy()
             img_draw = Image.fromarray(img_draw)
             draw = ImageDraw.Draw(img_draw)
-
             if boxes is not None:
                 names = []
                 distances_difference = []
                 for (box, point) in zip(boxes, probs):
-                    """ Loop inspired by the extract face method from facenet_pytorch"""
+                    """ Loop from the extract_face method from facenet_pytorch"""
+
                     if point < .985: continue
-                    #print(point)
                     margin = margins
                     image_size = 256
                     margin = [
@@ -98,23 +86,17 @@ def process_video(video_path,output_path,margins=40):
 
                     face = img_draw.crop(box).copy().resize((image_size, image_size), Image.BILINEAR).convert("RGB")
                     features_1 = model(utils.preprocess(face,device).reshape(-1, 3, 224, 224))
-
                     images_path = "individuals_extracted/"
                     data_path = os.path.join(images_path, '*pt')
                     files = glob.glob(data_path)
                     name = "Unknown"
                     best_distance = threshold + 5
                     for k,f1 in enumerate(files):
-                        #img = Image.open(f1).convert("RGB")
-                        features = torch.load(f1)#model(utils.preprocess(img,device).reshape(-1, 3, 224, 224))
+                        features = torch.load(f1)
                         distance = utils.euclidean_distance(features,features_1)
                         if distance < threshold and distance < best_distance:
                             best_distance = distance
                             name = re.sub('_[1-9]*[.]*[a-zA-Z]*', '', f1.replace(images_path,""))
-                            #name = re.sub('[.][a-zA-Z]*', '', f1.replace(images_path, ""))
-
-
-
 
                     names.append(name)
                     distances_difference.append(best_distance)
@@ -122,18 +104,13 @@ def process_video(video_path,output_path,margins=40):
                 for (box, point,name,distances) in zip(boxes, probs,names,distances_difference):
                     if point < .98 or name == "Unknown": continue
                     draw.rectangle(box.tolist(), width=4)
-                    #print(name + "  " + str(distances))
                     draw.text(box.tolist(), name, font=ImageFont.truetype("Keyboard.ttf",40))
-
-
-            #cv2.imshow("",np.asarray(img_draw))
 
             k = cv2.waitKey(3) & 0xff
             if k == 27:
                 break
             out.write(np.asarray(img_draw))
 
-        print("Video Generated")
         out.release()
         cap.release()
         cv2.destroyAllWindows()
@@ -149,16 +126,15 @@ def extract_features_individuals():
         for k, f1 in enumerate(files):
             img = Image.open(f1).convert("RGB")
             features = model(utils.preprocess(img, device).reshape(-1, 3, 224, 224))
-            #features = features.numpy()
             torch.save(features,"individuals_extracted/"+re.sub('[.][a-zA-Z]*', '.pt',f1.split("/")[1]))
 
 
 def main():
+    argparse = ArgumentParser()
     input_video_path = ""
     output_video_path = ""
     margin = 10
     extract_features = True
     if extract_features:
-        print("Extracting Features")
         extract_features_individuals()
     process_video(input_video_path, output_video_path,margin)
